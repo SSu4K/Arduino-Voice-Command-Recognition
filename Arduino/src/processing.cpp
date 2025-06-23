@@ -1,11 +1,11 @@
-#include <arduinoFFT.h>
 #include <Arduino.h>
+#include <arduinoFFT.h>
 #include <math.h>
 #include <stdint.h>
 
 #include "audio.h"
-#include "processing.h"
 #include "model_data.h"
+#include "processing.h"
 
 #define FRAME_LEN 255
 #define FRAME_STEP 128
@@ -35,7 +35,8 @@ void initModel() {
   resolver.AddReshape();
 
   // Build the interpreter
-  static tflite::MicroInterpreter static_interpreter(model, resolver, tensor_arena, kTensorArenaSize);
+  static tflite::MicroInterpreter static_interpreter(
+      model, resolver, tensor_arena, kTensorArenaSize);
   interpreter = &static_interpreter;
 
   // Allocate memory for tensors
@@ -58,12 +59,17 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
 
   int8_t* input_data = input->data.int8;
 
+  Serial.print("Scale: ");
+  Serial.println(scale, 6);
+  Serial.print("Zero point: ");
+  Serial.println(zero_point);
+
   for (int frame = 0; frame < NUM_FRAMES; frame++) {
     int start = frame * FRAME_STEP;
 
     for (size_t i = 0; i < FFT_SIZE; i++) {
       if (i < FRAME_LEN && (start + i) < RECORD_BUFFER_SIZE) {
-        vReal[i] = (double)recordBuffer[start + i];
+        vReal[i] = recordBuffer[start + i] / 32768.0;
       } else {
         vReal[i] = 0.0;
       }
@@ -79,15 +85,26 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
 
       int quantized = round((mag / scale) + zero_point);
       quantized = constrain(quantized, -128, 127);
-
-      // Flattened index for [1][124][129][1]
-      input_data[frame * FREQ_BINS + bin] = (int8_t)quantized;
+      int index = frame * FREQ_BINS + bin;
+      input_data[index] = quantized;
     }
   }
+  Serial.println("\nInput data:");
+  for (int i = 0; i < 100; i++) {
+    Serial.print(input_data[i]);
+    Serial.print(", ");
+  }
+  Serial.println();
 }
 
 bool runInference() {
   TfLiteTensor* input = interpreter->input(0);
+  input->params.zero_point = 0;
+  Serial.print("Input shape");
+  Serial.println(input->dims->data[0]);
+  Serial.println(input->dims->data[1]);
+  Serial.println(input->dims->data[2]);
+  Serial.println(input->dims->data[3]);
   compute_quantized_spectrogram(input);
 
   if (interpreter->Invoke() != kTfLiteOk) {
@@ -96,7 +113,11 @@ bool runInference() {
   }
 
   TfLiteTensor* output = interpreter->output(0);
-  
+  Serial.print("Output scale: ");
+  Serial.println(output->params.scale, 6);
+  Serial.print("Output zero point: ");
+  Serial.println(output->params.zero_point);
+
   // Example for classification output
   int8_t* output_data = output->data.int8;
   float scale = output->params.scale;
@@ -107,12 +128,18 @@ bool runInference() {
 
   for (int i = 0; i < output->dims->data[1]; i++) {
     float score = (output_data[i] - zero_point) * scale;
+    Serial.print("Class: ");
+    Serial.print(i);
+    Serial.print(" Score: ");
+    Serial.println(score);
+
     if (score > best_score) {
       best_score = score;
       best_index = i;
     }
   }
 
+  Serial.println();
   Serial.print("Prediction: class ");
   Serial.print(best_index);
   Serial.print(" score: ");
@@ -121,7 +148,4 @@ bool runInference() {
   return true;
 }
 
-
-void processData(byte const * data, size_t size){
-
-}
+void processData(byte const* data, size_t size) {}

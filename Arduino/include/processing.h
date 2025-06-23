@@ -8,5 +8,6 @@
 
 void initModel();
 void processData(byte const * data, size_t size);
+bool runInference();
 
 #endif
