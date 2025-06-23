@@ -1,0 +1,12 @@
+{
+  "name": "tflite-micro",
+  "version": "1.0.0",
+  "build": {
+    "flags": [
+      "-DTF_LITE_STATIC_MEMORY"
+    ]
+  },
+  "include": [
+    "src"
+  ]
+}

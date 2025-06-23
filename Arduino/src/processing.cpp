@@ -13,7 +13,6 @@
 #define NUM_FRAMES 124
 #define FREQ_BINS 129
 
-
 constexpr int kTensorArenaSize = 2 * 1024;
 uint8_t tensor_arena[kTensorArenaSize];
 
@@ -62,7 +61,7 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
   for (int frame = 0; frame < NUM_FRAMES; frame++) {
     int start = frame * FRAME_STEP;
 
-    for (int i = 0; i < FFT_SIZE; i++) {
+    for (size_t i = 0; i < FFT_SIZE; i++) {
       if (i < FRAME_LEN && (start + i) < RECORD_BUFFER_SIZE) {
         vReal[i] = (double)recordBuffer[start + i];
       } else {
