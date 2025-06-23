@@ -2,10 +2,10 @@
 #include <ArduinoJson.h>
 #include <arduinoFFT.h>
 
-#include "rgb.h"
 #include "audio.h"
-#include "transmit.h"
 #include "processing.h"
+#include "rgb.h"
+#include "transmit.h"
 
 typedef enum { IDLE, RECORDING, PROCESSING } Status;
 
@@ -15,6 +15,13 @@ void idleStep();
 void recordingStep();
 void processingStep();
 
+extern "C" char* sbrk(int incr);
+void printFreeMemory() {
+  char top;
+  Serial.print("Free memory: ");
+  Serial.println(&top - reinterpret_cast<char*>(sbrk(0)));
+}
+
 void setup() {
   delay(2000);  // Give USB CDC time to reconnect
 
@@ -22,6 +29,8 @@ void setup() {
   initTransmit();
   initPDM();
   initModel();
+
+  printFreeMemory();
 
   boardState = IDLE;
 }

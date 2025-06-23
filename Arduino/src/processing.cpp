@@ -13,12 +13,12 @@
 #define NUM_FRAMES 124
 #define FREQ_BINS 129
 
-constexpr int kTensorArenaSize = 2 * 1024;
+constexpr int kTensorArenaSize = 82100;
 uint8_t tensor_arena[kTensorArenaSize];
 
 arduinoFFT FFT;
 tflite::MicroInterpreter* interpreter;
-tflite::MicroMutableOpResolver<5> resolver;
+tflite::MicroMutableOpResolver<6> resolver;
 
 void initModel() {
   const tflite::Model* model = tflite::GetModel(model_tflit);
@@ -29,10 +29,11 @@ void initModel() {
   }
 
   resolver.AddFullyConnected();
-  resolver.AddReshape();
-  resolver.AddSoftmax();
   resolver.AddConv2D();
-  resolver.AddMul();
+  resolver.AddResizeBilinear();
+  resolver.AddMaxPool2D();
+  resolver.AddL2Normalization();
+  resolver.AddReshape();
 
   // Build the interpreter
   static tflite::MicroInterpreter static_interpreter(model, resolver, tensor_arena, kTensorArenaSize);
