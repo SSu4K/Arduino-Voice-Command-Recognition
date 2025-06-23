@@ -7,6 +7,7 @@
 #include "rgb.h"
 #include "transmit.h"
 
+
 typedef enum { IDLE, RECORDING, PROCESSING } Status;
 
 Status boardState;
@@ -15,22 +16,15 @@ void idleStep();
 void recordingStep();
 void processingStep();
 
-extern "C" char* sbrk(int incr);
-void printFreeMemory() {
-  char top;
-  Serial.print("Free memory: ");
-  Serial.println(&top - reinterpret_cast<char*>(sbrk(0)));
-}
-
 void setup() {
   delay(2000);  // Give USB CDC time to reconnect
 
   initRGB();
   initTransmit();
   initPDM();
-  initModel();
 
-  printFreeMemory();
+  Serial.println("Lodaing model version 3.");
+  initModel();
 
   boardState = IDLE;
 }
