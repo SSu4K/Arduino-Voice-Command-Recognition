@@ -86,7 +86,7 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
   }
 }
 
-bool runInference(tflite::MicroInterpreter* interpreter) {
+bool runInference() {
   TfLiteTensor* input = interpreter->input(0);
   compute_quantized_spectrogram(input);
 
