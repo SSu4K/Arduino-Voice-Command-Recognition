@@ -1,0 +1,7 @@
+# PlatformIO build artifacts
+.pio/
+.pioenvs/
+.cache/
+.output/
+.sconsign.dblite
+.gcc-flags.json
