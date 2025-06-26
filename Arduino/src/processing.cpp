@@ -13,7 +13,7 @@
 #define NUM_FRAMES 124
 #define FREQ_BINS 129
 
-constexpr int kTensorArenaSize = 70000;
+constexpr int kTensorArenaSize = 120000;
 uint8_t tensor_arena[kTensorArenaSize];
 
 arduinoFFT FFT;
@@ -21,6 +21,7 @@ tflite::MicroInterpreter* interpreter;
 tflite::MicroMutableOpResolver<5> resolver;
 
 void initModel() {
+  Serial.println("Lodaing model version 4.");
   const tflite::Model* model = tflite::GetModel(model_tflit);
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     Serial.println("Model schema version mismatch!");
@@ -48,6 +49,8 @@ void initModel() {
   }
 
   Serial.println("TFLite Micro interpreter initialized!");
+
+  randomSeed(analogRead(A0));
 }
 
 void compute_quantized_spectrogram(TfLiteTensor* input) {
@@ -69,7 +72,7 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
 
     for (size_t i = 0; i < FFT_SIZE; i++) {
       if (i < FRAME_LEN && (start + i) < RECORD_BUFFER_SIZE) {
-        vReal[i] = recordBuffer[start + i] / 32768.0;
+        vReal[i] = recordBuffer[i];
       } else {
         vReal[i] = 0.0;
       }
@@ -83,23 +86,35 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
       double mag = sqrt(vReal[bin] * vReal[bin] + vImag[bin] * vImag[bin]);
       // Optional: mag = log1p(mag);
 
+      if (frame == 10) {
+        Serial.print(mag);
+        if (bin % 50 == 49) {
+          Serial.println();
+        } else {
+          Serial.print(", ");
+        }
+      }
       int quantized = round((mag / scale) + zero_point);
       quantized = constrain(quantized, -128, 127);
       int index = frame * FREQ_BINS + bin;
       input_data[index] = quantized;
     }
   }
+  Serial.println();
   Serial.println("\nInput data:");
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 600; i++) {
     Serial.print(input_data[i]);
-    Serial.print(", ");
+    if (i % 50 == 49) {
+      Serial.println();
+    } else {
+      Serial.print(", ");
+    }
   }
   Serial.println();
 }
 
 bool runInference() {
   TfLiteTensor* input = interpreter->input(0);
-  input->params.zero_point = 0;
   Serial.print("Input shape");
   Serial.println(input->dims->data[0]);
   Serial.println(input->dims->data[1]);
@@ -123,27 +138,41 @@ bool runInference() {
   float scale = output->params.scale;
   int zero_point = output->params.zero_point;
 
-  int best_index = -1;
-  float best_score = -INFINITY;
+  int num_classes = output->dims->data[1];
 
-  for (int i = 0; i < output->dims->data[1]; i++) {
-    float score = (output_data[i] - zero_point) * scale;
-    Serial.print("Class: ");
-    Serial.print(i);
-    Serial.print(" Score: ");
-    Serial.println(score);
+  float scores[num_classes];
+  float max_score = -INFINITY;
 
-    if (score > best_score) {
-      best_score = score;
-      best_index = i;
+  // Dequantize scores
+  for (int i = 0; i < num_classes; i++) {
+    scores[i] = (output_data[i] - zero_point) * scale;
+    if (scores[i] > max_score) {
+      max_score = scores[i];
     }
   }
 
-  Serial.println();
-  Serial.print("Prediction: class ");
-  Serial.print(best_index);
-  Serial.print(" score: ");
-  Serial.println(best_score);
+  float sum_exp = 0.0;
+  for (int i = 0; i < num_classes; i++) {
+    scores[i] = exp(scores[i] - max_score);  // for numerical stability
+    sum_exp += scores[i];
+  }
+
+  int best_index = -1;
+  float best_prob = -1.0;
+
+  Serial.println("Class probabilities:");
+  for (int i = 0; i < num_classes; i++) {
+    float probability = scores[i] / sum_exp;
+    Serial.print("Class ");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(probability, 6);
+
+    if (probability > best_prob) {
+      best_prob = probability;
+      best_index = i;
+    }
+  }
 
   return true;
 }

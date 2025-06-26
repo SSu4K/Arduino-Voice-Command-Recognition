@@ -17,7 +17,11 @@
 #define RECORD_SECONDS      (1)
 #define RECORD_BUFFER_SIZE  (RECORD_SECONDS*FREQUENCY)
 
-#define LOUDNESS_THRESHOLD  (300)
+#define GAIN                (1)
+#define PREGAIN_MAX         (INT16_MAX/GAIN)
+#define PREGAIN_MIN         (INT16_MIN/GAIN)
+
+#define LOUDNESS_THRESHOLD  (200)
 
 extern short recordBuffer[RECORD_BUFFER_SIZE];
 

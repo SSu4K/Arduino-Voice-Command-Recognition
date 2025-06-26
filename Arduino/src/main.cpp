@@ -22,7 +22,6 @@ void setup() {
   initTransmit();
   initPDM();
 
-  Serial.println("Lodaing model version 4.");
   initModel();
 
   boardState = IDLE;
@@ -94,6 +93,10 @@ void processingStep() {
   //     Serial.println("Failed to send encrypted volume.");
   //   }
 
+//   for(size_t i = 0; i<RECORD_BUFFER_SIZE; i++){
+//     Serial.println(recordBuffer[i]);
+//   }
+  
   runInference();
   boardState = IDLE;
   setColor(Black);

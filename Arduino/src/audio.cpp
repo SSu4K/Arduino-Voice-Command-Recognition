@@ -9,6 +9,7 @@ size_t recordBufferIndex = 0;
 void initPDM() {
   PDM.setBufferSize(SAMPLE_BUFFER_SIZE);
   PDM.onReceive(onPDMData);
+  //PDM.setGain(10);
 
   if (!PDM.begin(CHANNELS, FREQUENCY)) {
     Serial.println("Failed to start PDM!");
@@ -16,7 +17,7 @@ void initPDM() {
       ;
   }
 
-  Serial.println("Microphone initialized");
+  // Serial.println("Microphone initialized");
 }
 
 void onPDMData() {
@@ -54,7 +55,16 @@ void recordSamples() {
     return;
   for (int i = 0; i < samplesRead && !isRecordBufferFull();
        i++, recordBufferIndex++) {
-    recordBuffer[recordBufferIndex] = sampleBuffer[i];
+    
+    if(sampleBuffer[i] > PREGAIN_MAX){
+        recordBuffer[recordBufferIndex] = INT16_MAX;
+    }
+    else if(sampleBuffer[i] < PREGAIN_MIN){
+        recordBuffer[recordBufferIndex] = INT16_MIN;
+    }
+    else{
+        recordBuffer[recordBufferIndex] = GAIN*sampleBuffer[i];
+    }
   }
   // There might be some leftover samples after filling up the recordBuffer but
   // we don't care about them.
