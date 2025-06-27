@@ -5,3 +5,6 @@
 .output/
 .sconsign.dblite
 .gcc-flags.json
+
+# ignore custom tmp folder
+tmp/
