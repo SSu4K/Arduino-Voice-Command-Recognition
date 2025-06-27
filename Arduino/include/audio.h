@@ -10,12 +10,12 @@
 
 #define SAMPLE_BUFFER_SIZE  (128)
 
-#define CHANNELS            int(1)
-#define FREQUENCY           uint32_t(16000)
+#define CHANNELS            (1)
+#define SAMPLE_RATE         (16000)
 
 // We assume there always is just one channel
 #define RECORD_SECONDS      (1)
-#define RECORD_BUFFER_SIZE  (RECORD_SECONDS*FREQUENCY)
+#define RECORD_BUFFER_SIZE  (RECORD_SECONDS*SAMPLE_RATE)
 
 #define GAIN                (1)
 #define PREGAIN_MAX         (INT16_MAX/GAIN)

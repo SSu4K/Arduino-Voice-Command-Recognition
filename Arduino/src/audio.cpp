@@ -11,7 +11,7 @@ void initPDM() {
   PDM.onReceive(onPDMData);
   //PDM.setGain(10);
 
-  if (!PDM.begin(CHANNELS, FREQUENCY)) {
+  if (!PDM.begin(CHANNELS, SAMPLE_RATE)) {
     Serial.println("Failed to start PDM!");
     while (1)
       ;

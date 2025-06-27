@@ -7,7 +7,7 @@
 #include <tensorflow/lite/schema/schema_generated.h>
 
 void initModel();
-void processData(byte const * data, size_t size);
+void initPreprocessor();
 bool runInference();
 
 #endif

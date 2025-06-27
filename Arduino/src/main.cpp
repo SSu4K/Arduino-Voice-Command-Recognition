@@ -2,8 +2,6 @@
 #include <ArduinoJson.h>
 #include <arduinoFFT.h>
 
-#include "frontend.h"
-#include "frontend_util.h"
 #include "audio.h"
 #include "processing.h"
 #include "rgb.h"
@@ -25,6 +23,7 @@ void setup() {
   initPDM();
 
   initModel();
+  initPreprocessor();
 
   boardState = IDLE;
 }

@@ -2,6 +2,10 @@
 #include <arduinoFFT.h>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
+
+#include "frontend.h"
+#include "frontend_util.h"
 
 #include "audio.h"
 #include "model_data.h"
@@ -13,12 +17,17 @@
 #define NUM_FRAMES 124
 #define FREQ_BINS 129
 
+arduinoFFT FFT;
+
+// Model globals
 constexpr int kTensorArenaSize = 120000;
 uint8_t tensor_arena[kTensorArenaSize];
-
-arduinoFFT FFT;
 tflite::MicroInterpreter* interpreter;
 tflite::MicroMutableOpResolver<5> resolver;
+
+// Preprocessor globals
+struct FrontendConfig frontend_config;
+struct FrontendState frontend_state;
 
 void initModel() {
   Serial.println("Lodaing model version 4.");
@@ -53,7 +62,14 @@ void initModel() {
   randomSeed(analogRead(A0));
 }
 
-void compute_quantized_spectrogram(TfLiteTensor* input) {
+void initPreprocessor(){
+    FrontendFillConfigWithDefaults(&frontend_config);
+    if (!FrontendPopulateState(&frontend_config, &frontend_state, SAMPLE_RATE)) {
+        fprintf(stderr, "Failed to populate frontend state\n");
+    }
+}
+
+void computeQuantizedSpectrogram(TfLiteTensor* input) {
   double vReal[FFT_SIZE];
   double vImag[FFT_SIZE];
 
@@ -113,6 +129,48 @@ void compute_quantized_spectrogram(TfLiteTensor* input) {
   Serial.println();
 }
 
+inline uint8_t quantize(float value, float scale, int zero){
+    return constrain(round((value / scale) + zero), -128, 127);
+}
+
+inline float dequantize(uint8_t value, float scale, int zero){
+    return (value - zero) * scale;
+}
+
+void preprocessAudio(int16_t* inputBuffer, size_t inputBufferSize, TfLiteTensor* modelInput){
+    float scale = modelInput->params.scale;
+    int zero_point = modelInput->params.zero_point;
+
+    int8_t* result = modelInput->data.int8;
+    size_t resultSize = modelInput->bytes;
+    size_t resultIndex = 0;
+
+    while (inputBufferSize > 0) {
+        size_t num_samples_read;
+        struct FrontendOutput output = FrontendProcessSamples(
+            &frontend_state, inputBuffer, inputBufferSize, &num_samples_read);
+        inputBuffer += num_samples_read;
+        inputBufferSize -= num_samples_read;
+        
+        if(output.values != NULL){
+            for(size_t i=0; i<output.size && resultIndex<resultSize; i++, resultIndex++){
+                result[resultIndex] = quantize(output.values[i], scale, zero_point);
+            }
+        }
+    }
+
+    // Serial.println("Preprocessing results:");
+    // for(size_t i=0; i<resultSize; i++){
+    //     if(i%50 == 49){
+    //         Serial.println(int(result[i]));
+    //     }
+    //     else{
+    //         Serial.print(int(result[i]));
+    //         Serial.print(" ");
+    //     }
+    // }
+}
+
 bool runInference() {
   TfLiteTensor* input = interpreter->input(0);
   Serial.print("Input shape");
@@ -120,8 +178,8 @@ bool runInference() {
   Serial.println(input->dims->data[1]);
   Serial.println(input->dims->data[2]);
   Serial.println(input->dims->data[3]);
-  compute_quantized_spectrogram(input);
-
+  //computeQuantizedSpectrogram(input);
+  preprocessAudio(recordBuffer, RECORD_BUFFER_SIZE, input);
   if (interpreter->Invoke() != kTfLiteOk) {
     Serial.println("Inference failed!");
     return false;
@@ -145,7 +203,7 @@ bool runInference() {
 
   // Dequantize scores
   for (int i = 0; i < num_classes; i++) {
-    scores[i] = (output_data[i] - zero_point) * scale;
+    scores[i] = dequantize(output_data[i], scale, zero_point);
     if (scores[i] > max_score) {
       max_score = scores[i];
     }
