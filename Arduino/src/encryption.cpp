@@ -1,4 +1,5 @@
 #include "encryption.h"
+#include "debug.h"
 #include <AES.h>
 #include <CTR.h>
 #include <Crypto.h>
@@ -23,6 +24,7 @@ void initEncryption(){
 //     delay(1);
 //   }
 //   RNG.seed(seed, sizeof(seed));
+    DBG_PRINTLN("Encryption initialized!");
 }
 
 void generateRandomIV(byte *iv) {

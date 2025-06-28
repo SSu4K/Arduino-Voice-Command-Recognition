@@ -1,3 +1,4 @@
+#include "debug.h"
 #include "transmit.h"
 #include "encryption.h"
 
@@ -6,6 +7,7 @@ const byte HEADER[HEADER_SIZE] = {0xAA, 0x55};
 void initTransmit() {
   Serial.begin(SERIAL_BAUD_RATE);
   while (!Serial);
+  DBG_PRINTLN("Serial initialized!");
 }
 
 byte calculateChecksum(const byte* data, size_t length) {

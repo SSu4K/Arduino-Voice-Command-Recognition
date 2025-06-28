@@ -1,3 +1,7 @@
+// processing.h
+// This module handles all processing of the audio data.
+// Includes preprocessing and model inference.
+
 #ifndef __PROCESSING_H__
 #define __PROCESSING_H__
 

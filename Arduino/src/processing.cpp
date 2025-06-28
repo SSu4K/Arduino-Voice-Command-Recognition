@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "debug.h"
 #include "frontend.h"
 #include "frontend_util.h"
 
@@ -30,13 +31,14 @@ struct FrontendConfig frontend_config;
 struct FrontendState frontend_state;
 
 void initModel() {
-  Serial.println("Lodaing model version 4.");
+  DBG_PRINTLN("Lodaing model version 4.");
   const tflite::Model* model = tflite::GetModel(model_tflit);
   if (model->version() != TFLITE_SCHEMA_VERSION) {
-    Serial.println("Model schema version mismatch!");
+    DBG_PRINTLN("Model schema version mismatch!");
     while (1)
       ;
   }
+  DBG_PRINTLN("Loaded model!");
 
   resolver.AddFullyConnected();
   resolver.AddConv2D();
@@ -52,12 +54,12 @@ void initModel() {
   // Allocate memory for tensors
   TfLiteStatus allocate_status = interpreter->AllocateTensors();
   if (allocate_status != kTfLiteOk) {
-    Serial.println("Failed to allocate tensors!");
+    DBG_PRINTLN("Failed to allocate tensors!");
     while (1)
       ;
   }
 
-  Serial.println("TFLite Micro interpreter initialized!");
+  DBG_PRINTLN("TFLite Micro interpreter initialized!");
 
   randomSeed(analogRead(A0));
 }
@@ -65,7 +67,7 @@ void initModel() {
 void initPreprocessor() {
   FrontendFillConfigWithDefaults(&frontend_config);
   if (!FrontendPopulateState(&frontend_config, &frontend_state, SAMPLE_RATE)) {
-    fprintf(stderr, "Failed to populate frontend state\n");
+    DBG_PRINTLN("Failed to populate frontend state\n");
   }
 }
 
@@ -82,10 +84,10 @@ void computeQuantizedSpectrogram(TfLiteTensor* input) {
 
   int8_t* input_data = input->data.int8;
 
-  Serial.print("Scale: ");
-  Serial.println(scale, 6);
-  Serial.print("Zero point: ");
-  Serial.println(zero_point);
+  DBG_PRINT("Scale: ");
+  DBG_PRINTLN(scale, 6);
+  DBG_PRINT("Zero point: ");
+  DBG_PRINTLN(zero_point);
 
   for (int frame = 0; frame < NUM_FRAMES; frame++) {
     int start = frame * FRAME_STEP;
@@ -107,11 +109,11 @@ void computeQuantizedSpectrogram(TfLiteTensor* input) {
       // Optional: mag = log1p(mag);
 
       if (frame == 10) {
-        Serial.print(mag);
+        DBG_PRINT(mag);
         if (bin % 50 == 49) {
-          Serial.println();
+          DBG_PRINTLN();
         } else {
-          Serial.print(", ");
+          DBG_PRINT(", ");
         }
       }
       int quantized = round((mag / scale) + zero_point);
@@ -120,17 +122,17 @@ void computeQuantizedSpectrogram(TfLiteTensor* input) {
       input_data[index] = quantized;
     }
   }
-  Serial.println();
-  Serial.println("\nInput data:");
+  DBG_PRINTLN();
+  DBG_PRINTLN("\nInput data:");
   for (int i = 0; i < 600; i++) {
-    Serial.print(input_data[i]);
+    DBG_PRINT(input_data[i]);
     if (i % 50 == 49) {
-      Serial.println();
+      DBG_PRINTLN();
     } else {
-      Serial.print(", ");
+      DBG_PRINT(", ");
     }
   }
-  Serial.println();
+  DBG_PRINTLN();
 }
 
 inline uint8_t quantize(float value, float scale, int zero) {
@@ -169,38 +171,27 @@ void preprocessAudio(int16_t* inputBuffer,
       }
     }
   }
-
-  // Serial.println("Preprocessing results:");
-  // for(size_t i=0; i<resultSize; i++){
-  //     if(i%50 == 49){
-  //         Serial.println(int(result[i]));
-  //     }
-  //     else{
-  //         Serial.print(int(result[i]));
-  //         Serial.print(" ");
-  //     }
-  // }
 }
 
 bool runInference() {
   TfLiteTensor* input = interpreter->input(0);
-  Serial.print("Input shape");
-  Serial.println(input->dims->data[0]);
-  Serial.println(input->dims->data[1]);
-  Serial.println(input->dims->data[2]);
-  Serial.println(input->dims->data[3]);
+  DBG_PRINTLN("Input shape");
+  DBG_PRINTLN(input->dims->data[0]);
+  DBG_PRINTLN(input->dims->data[1]);
+  DBG_PRINTLN(input->dims->data[2]);
+  DBG_PRINTLN(input->dims->data[3]);
   // computeQuantizedSpectrogram(input);
   preprocessAudio(recordBuffer, RECORD_BUFFER_SIZE, input);
   if (interpreter->Invoke() != kTfLiteOk) {
-    Serial.println("Inference failed!");
+    DBG_PRINTLN("Inference failed!");
     return false;
   }
 
   TfLiteTensor* output = interpreter->output(0);
-  Serial.print("Output scale: ");
-  Serial.println(output->params.scale, 6);
-  Serial.print("Output zero point: ");
-  Serial.println(output->params.zero_point);
+  DBG_PRINT("Output scale: ");
+  DBG_PRINTLN(output->params.scale, 6);
+  DBG_PRINT("Output zero point: ");
+  DBG_PRINTLN(output->params.zero_point);
 
   // Example for classification output
   int8_t* output_data = output->data.int8;
@@ -229,13 +220,13 @@ bool runInference() {
   int best_index = -1;
   float best_prob = -1.0;
 
-  Serial.println("Class probabilities:");
+  DBG_PRINTLN("Class probabilities:");
   for (int i = 0; i < num_classes; i++) {
     float probability = scores[i] / sum_exp;
-    Serial.print("Class ");
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.println(probability, 6);
+    DBG_PRINT("Class ");
+    DBG_PRINT(i);
+    DBG_PRINT(": ");
+    DBG_PRINTLN(probability, 2);
 
     if (probability > best_prob) {
       best_prob = probability;

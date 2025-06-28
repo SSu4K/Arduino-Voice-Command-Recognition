@@ -1,4 +1,5 @@
 #include "audio.h"
+#include "debug.h"
 
 short sampleBuffer[SAMPLE_BUFFER_SIZE];
 volatile int samplesRead;
@@ -11,12 +12,12 @@ void initPDM() {
   PDM.onReceive(onPDMData);
 
   if (!PDM.begin(CHANNELS, SAMPLE_RATE)) {
-    Serial.println("Failed to start PDM!");
+    DBG_PRINTLN("Failed to start PDM!");
     while (1)
       ;
   }
 
-  // Serial.println("Microphone initialized");
+  DBG_PRINTLN("Microphone initialized!");
 }
 
 void onPDMData() {
@@ -40,13 +41,13 @@ float measureLoudness() {
 
 void startRecording() {
   recordBufferIndex = 0;
-  Serial.print("Started recording ");
-  Serial.print(RECORD_SECONDS);
-  Serial.println("s of audio.");
+  DBG_PRINT("Started recording ");
+  DBG_PRINT(RECORD_SECONDS);
+  DBG_PRINTLN("s of audio.");
 }
 
 void stopRecording() {
-  Serial.println("Stopped recording.");
+  DBG_PRINTLN("Stopped recording.");
 }
 
 void recordSamples() {

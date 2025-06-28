@@ -11,7 +11,7 @@
 #define HEADER_SIZE         2
 
 void initTransmit();
-bool transmitSerial(const byte* message);
+bool transmitSerial(const byte* message, size_t messageLength);
 bool transmitStringSerial(const char* message);
 
 #endif

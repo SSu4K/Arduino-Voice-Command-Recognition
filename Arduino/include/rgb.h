@@ -1,3 +1,6 @@
+// rgb.h
+// This module handles basic color control of the RGB diode.
+
 #ifndef __RGB_H__
 #define __RGB_H__
 
