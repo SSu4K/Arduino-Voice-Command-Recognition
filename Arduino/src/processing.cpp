@@ -30,15 +30,17 @@ tflite::MicroMutableOpResolver<5> resolver;
 struct FrontendConfig frontend_config;
 struct FrontendState frontend_state;
 
-void initModel() {
-  DBG_PRINTLN("Lodaing model version 4.");
+bool initModel() {
   const tflite::Model* model = tflite::GetModel(model_tflit);
+  if(model == NULL){
+    DBG_PRINTLN("Failed model load!");
+    return false;
+  }
   if (model->version() != TFLITE_SCHEMA_VERSION) {
     DBG_PRINTLN("Model schema version mismatch!");
-    while (1)
-      ;
+    return false;
   }
-  DBG_PRINTLN("Loaded model!");
+  DBG_PRINTLN("Loaded model.");
 
   resolver.AddFullyConnected();
   resolver.AddConv2D();
@@ -55,20 +57,23 @@ void initModel() {
   TfLiteStatus allocate_status = interpreter->AllocateTensors();
   if (allocate_status != kTfLiteOk) {
     DBG_PRINTLN("Failed to allocate tensors!");
-    while (1)
-      ;
+    return false;
   }
 
-  DBG_PRINTLN("TFLite Micro interpreter initialized!");
-
-  randomSeed(analogRead(A0));
+  DBG_PRINTLN("TFLite Micro interpreter initialized.");
+  return true;
 }
 
-void initPreprocessor() {
+bool initPreprocessor() {
   FrontendFillConfigWithDefaults(&frontend_config);
   if (!FrontendPopulateState(&frontend_config, &frontend_state, SAMPLE_RATE)) {
-    DBG_PRINTLN("Failed to populate frontend state\n");
+    DBG_PRINTLN("Failed to populate frontend state!");
+    FrontendFreeStateContents(&frontend_state);
+    return false;
   }
+
+  DBG_PRINTLN("Preprocessor initialized.");
+  return true;
 }
 
 void computeQuantizedSpectrogram(TfLiteTensor* input) {

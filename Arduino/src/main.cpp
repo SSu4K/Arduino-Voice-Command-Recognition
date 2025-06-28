@@ -3,6 +3,7 @@
 #include <arduinoFFT.h>
 
 #include "audio.h"
+#include "debug.h"
 #include "processing.h"
 #include "rgb.h"
 #include "transmit.h"
@@ -16,14 +17,18 @@ void recordingStep();
 void processingStep();
 
 void setup() {
-  delay(2000);  // Give USB CDC time to reconnect
+  bool success = true;
+  success &= initTransmit();
+  success &= initRGB();
+  success &= initPDM();
+  success &= initPreprocessor();
+  success &= initModel();
 
-  initRGB();
-  initTransmit();
-  initPDM();
-
-  initModel();
-  initPreprocessor();
+  if (!success) {
+    DBG_PRINTLN("Initialization Failed!");
+    while (true)
+      ;
+  }
 
   boardState = IDLE;
 }
@@ -94,10 +99,10 @@ void processingStep() {
   //     Serial.println("Failed to send encrypted volume.");
   //   }
 
-//   for(size_t i = 0; i<RECORD_BUFFER_SIZE; i++){
-//     Serial.println(recordBuffer[i]);
-//   }
-  
+  //   for(size_t i = 0; i<RECORD_BUFFER_SIZE; i++){
+  //     Serial.println(recordBuffer[i]);
+  //   }
+
   runInference();
   boardState = IDLE;
   setColor(Black);

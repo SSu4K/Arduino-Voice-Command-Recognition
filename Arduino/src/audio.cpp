@@ -7,17 +7,17 @@ volatile int samplesRead;
 short recordBuffer[RECORD_BUFFER_SIZE];
 size_t recordBufferIndex = 0;
 
-void initPDM() {
+bool initPDM() {
   PDM.setBufferSize(SAMPLE_BUFFER_SIZE);
   PDM.onReceive(onPDMData);
 
   if (!PDM.begin(CHANNELS, SAMPLE_RATE)) {
     DBG_PRINTLN("Failed to start PDM!");
-    while (1)
-      ;
+    return false;
   }
 
-  DBG_PRINTLN("Microphone initialized!");
+  DBG_PRINTLN("Microphone initialized.");
+  return true;
 }
 
 void onPDMData() {

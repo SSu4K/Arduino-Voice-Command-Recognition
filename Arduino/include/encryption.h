@@ -11,7 +11,7 @@
 #define KEY_SIZE            16
 #define IV_SIZE             KEY_SIZE
 
-void initEncryption();
+bool initEncryption();
 bool encrypt(const byte * message, size_t messageLength, byte * iv, byte * encrypted);
 
 #endif

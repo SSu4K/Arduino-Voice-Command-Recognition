@@ -15,7 +15,7 @@ typedef enum{
     White
 } Color;
 
-void initRGB();
+bool initRGB();
 void setColor(Color color);
 
 #endif

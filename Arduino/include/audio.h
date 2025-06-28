@@ -25,7 +25,7 @@
 
 extern short recordBuffer[RECORD_BUFFER_SIZE];
 
-void initPDM();
+bool initPDM();
 void onPDMData();
 float measureLoudness();
 void startRecording();

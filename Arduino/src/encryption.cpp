@@ -15,7 +15,7 @@ const byte key[KEY_SIZE] = {
   0x85, 0x7d, 0x77, 0x81
 };
 
-void initEncryption(){
+bool initEncryption(){
     pinMode(A0, INPUT);
 //   RNG.begin("manual");
 //   byte seed[32];
@@ -24,7 +24,8 @@ void initEncryption(){
 //     delay(1);
 //   }
 //   RNG.seed(seed, sizeof(seed));
-    DBG_PRINTLN("Encryption initialized!");
+    DBG_PRINTLN("Encryption initialized.");
+    return true;
 }
 
 void generateRandomIV(byte *iv) {

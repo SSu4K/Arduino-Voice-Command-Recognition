@@ -10,8 +10,8 @@
 #include <tensorflow/lite/micro/all_ops_resolver.h>
 #include <tensorflow/lite/schema/schema_generated.h>
 
-void initModel();
-void initPreprocessor();
+bool initModel();
+bool initPreprocessor();
 bool runInference();
 
 #endif

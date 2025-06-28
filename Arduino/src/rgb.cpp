@@ -12,13 +12,14 @@ static const bool DIODE_MAP[8][3] = {
     {0, 0, 0},
 };
 
-void initRGB(){
+bool initRGB(){
     pinMode(LEDR, OUTPUT);
     digitalWrite(LEDR, HIGH);
     pinMode(LEDG, OUTPUT);
     digitalWrite(LEDG, HIGH);
     pinMode(LEDB, OUTPUT);
     digitalWrite(LEDB, HIGH);
+    return true;
 }
 
 void setColor(Color color){

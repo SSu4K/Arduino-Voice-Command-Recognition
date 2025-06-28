@@ -10,7 +10,7 @@
 #define SERIAL_BAUD_RATE    115200
 #define HEADER_SIZE         2
 
-void initTransmit();
+bool initTransmit();
 bool transmitSerial(const byte* message, size_t messageLength);
 bool transmitStringSerial(const char* message);
 

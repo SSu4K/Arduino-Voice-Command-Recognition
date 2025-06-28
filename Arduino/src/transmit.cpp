@@ -4,10 +4,11 @@
 
 const byte HEADER[HEADER_SIZE] = {0xAA, 0x55};
 
-void initTransmit() {
+bool initTransmit() {
   Serial.begin(SERIAL_BAUD_RATE);
   while (!Serial);
-  DBG_PRINTLN("Serial initialized!");
+  DBG_PRINTLN("Serial initialized.");
+  return true;
 }
 
 byte calculateChecksum(const byte* data, size_t length) {
