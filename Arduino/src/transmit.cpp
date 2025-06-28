@@ -9,6 +9,9 @@ void initTransmit() {
 }
 
 byte calculateChecksum(const byte* data, size_t length) {
+    if (data == NULL) {
+        return false;
+    }
     byte checksum = 0;
     for (size_t i = 0; i < length; i++) {
         checksum ^= data[i];

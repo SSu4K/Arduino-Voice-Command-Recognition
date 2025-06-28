@@ -36,7 +36,7 @@ void generateRandomIV(byte *iv) {
 }
 
 bool encrypt(const byte * message, size_t messageLength, byte * iv, byte * encrypted){
-  if(message == NULL || encrypted == NULL || iv == NULL){
+  if(message == NULL || iv == NULL || encrypted == NULL){
     return false; // null input parameters
   }
   

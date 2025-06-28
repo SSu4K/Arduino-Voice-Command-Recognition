@@ -9,7 +9,6 @@ size_t recordBufferIndex = 0;
 void initPDM() {
   PDM.setBufferSize(SAMPLE_BUFFER_SIZE);
   PDM.onReceive(onPDMData);
-  //PDM.setGain(10);
 
   if (!PDM.begin(CHANNELS, SAMPLE_RATE)) {
     Serial.println("Failed to start PDM!");

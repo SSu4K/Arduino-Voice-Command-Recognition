@@ -62,14 +62,18 @@ void initModel() {
   randomSeed(analogRead(A0));
 }
 
-void initPreprocessor(){
-    FrontendFillConfigWithDefaults(&frontend_config);
-    if (!FrontendPopulateState(&frontend_config, &frontend_state, SAMPLE_RATE)) {
-        fprintf(stderr, "Failed to populate frontend state\n");
-    }
+void initPreprocessor() {
+  FrontendFillConfigWithDefaults(&frontend_config);
+  if (!FrontendPopulateState(&frontend_config, &frontend_state, SAMPLE_RATE)) {
+    fprintf(stderr, "Failed to populate frontend state\n");
+  }
 }
 
 void computeQuantizedSpectrogram(TfLiteTensor* input) {
+  if (input == NULL) {
+    return;
+  }
+
   double vReal[FFT_SIZE];
   double vImag[FFT_SIZE];
 
@@ -129,46 +133,53 @@ void computeQuantizedSpectrogram(TfLiteTensor* input) {
   Serial.println();
 }
 
-inline uint8_t quantize(float value, float scale, int zero){
-    return constrain(round((value / scale) + zero), -128, 127);
+inline uint8_t quantize(float value, float scale, int zero) {
+  return constrain(round((value / scale) + zero), -128, 127);
 }
 
-inline float dequantize(uint8_t value, float scale, int zero){
-    return (value - zero) * scale;
+inline float dequantize(uint8_t value, float scale, int zero) {
+  return (value - zero) * scale;
 }
 
-void preprocessAudio(int16_t* inputBuffer, size_t inputBufferSize, TfLiteTensor* modelInput){
-    float scale = modelInput->params.scale;
-    int zero_point = modelInput->params.zero_point;
+void preprocessAudio(int16_t* inputBuffer,
+                     size_t inputBufferSize,
+                     TfLiteTensor* modelInput) {
+  if (inputBuffer == NULL || modelInput == NULL) {
+    return;
+  }
 
-    int8_t* result = modelInput->data.int8;
-    size_t resultSize = modelInput->bytes;
-    size_t resultIndex = 0;
+  float scale = modelInput->params.scale;
+  int zero_point = modelInput->params.zero_point;
 
-    while (inputBufferSize > 0) {
-        size_t num_samples_read;
-        struct FrontendOutput output = FrontendProcessSamples(
-            &frontend_state, inputBuffer, inputBufferSize, &num_samples_read);
-        inputBuffer += num_samples_read;
-        inputBufferSize -= num_samples_read;
-        
-        if(output.values != NULL){
-            for(size_t i=0; i<output.size && resultIndex<resultSize; i++, resultIndex++){
-                result[resultIndex] = quantize(output.values[i], scale, zero_point);
-            }
-        }
+  int8_t* result = modelInput->data.int8;
+  size_t resultSize = modelInput->bytes;
+  size_t resultIndex = 0;
+
+  while (inputBufferSize > 0) {
+    size_t num_samples_read;
+    struct FrontendOutput output = FrontendProcessSamples(
+        &frontend_state, inputBuffer, inputBufferSize, &num_samples_read);
+    inputBuffer += num_samples_read;
+    inputBufferSize -= num_samples_read;
+
+    if (output.values != NULL) {
+      for (size_t i = 0; i < output.size && resultIndex < resultSize;
+           i++, resultIndex++) {
+        result[resultIndex] = quantize(output.values[i], scale, zero_point);
+      }
     }
+  }
 
-    // Serial.println("Preprocessing results:");
-    // for(size_t i=0; i<resultSize; i++){
-    //     if(i%50 == 49){
-    //         Serial.println(int(result[i]));
-    //     }
-    //     else{
-    //         Serial.print(int(result[i]));
-    //         Serial.print(" ");
-    //     }
-    // }
+  // Serial.println("Preprocessing results:");
+  // for(size_t i=0; i<resultSize; i++){
+  //     if(i%50 == 49){
+  //         Serial.println(int(result[i]));
+  //     }
+  //     else{
+  //         Serial.print(int(result[i]));
+  //         Serial.print(" ");
+  //     }
+  // }
 }
 
 bool runInference() {
@@ -178,7 +189,7 @@ bool runInference() {
   Serial.println(input->dims->data[1]);
   Serial.println(input->dims->data[2]);
   Serial.println(input->dims->data[3]);
-  //computeQuantizedSpectrogram(input);
+  // computeQuantizedSpectrogram(input);
   preprocessAudio(recordBuffer, RECORD_BUFFER_SIZE, input);
   if (interpreter->Invoke() != kTfLiteOk) {
     Serial.println("Inference failed!");
@@ -234,5 +245,3 @@ bool runInference() {
 
   return true;
 }
-
-void processData(byte const* data, size_t size) {}
